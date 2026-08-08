@@ -4,11 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "npx vite",
     "bump": "node ./bump.js",
-    "build": "vite build",
-    "preview": "vite preview",
-    "format": "prettier -w ."
+    "build": "npx vite build",
+    "preview": "npx vite preview",
+    "format": "npx prettier -w ."
   },
   "devDependencies": {
     "@types/w3c-capture-all-screens": "^0.0.0",
