@@ -14,7 +14,7 @@
     "@types/w3c-capture-all-screens": "^0.0.0",
     "@types/w3c-controlled-frame": "^0.0.1",
     "@types/w3c-direct-sockets": "^0.0.2",
-    "dotenv": "^16.4.2",
+    "dotenv": "^16.6.1",
     "prettier": "^3.2.5",
     "rollup-plugin-webbundle": "^0.2.0",
     "tinycolor2": "^1.6.0",
