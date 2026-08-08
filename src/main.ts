@@ -16,59 +16,64 @@
 
 import { collectConnections, readStream, writeStream } from './streams';
 
-const server = new TCPServerSocket('::1');
 let address: string;
 let port: number;
 let connections = 0;
 let addSocketButton: HTMLButtonElement;
 const serverElem = document.createElement('socket-server');
 let bytes = 0;
+let server: TCPServerSocket | undefined;
 
-collectConnections(
-  server,
-  (a, p) => {
-    address = a;
-    port = p;
-    console.log(`Server listening on ${address}:${port}`);
-    if (addSocketButton) {
-      addSocketButton.disabled = false;
-    }
-    setup();
-  },
-  async (socket: TCPSocket) => {
-    connections++;
-    serverElem.setAttribute('connections', connections.toString());
+const iwaAvailable = typeof TCPServerSocket !== 'undefined';
 
-    // TODO: Setup echo back to all connected servers
-    serverElem.addEventListener('send', (e: CustomEvent) => {
-      const data = e.detail.message;
-      console.log(data);
-      writeStream(socket, data);
-    });
+if (iwaAvailable) {
+  server = new TCPServerSocket('::1');
 
-    // Wait for the socket to be opened
-    const connection = await socket.opened;
-    // Get a reader to read from the socket
-    const reader = connection.readable.getReader();
-    await readStream(reader, (value: Uint8Array) => {
-      console.log(value.byteLength);
-      bytes += value.byteLength;
-      serverElem.setAttribute('bytes', bytes.toString());
-      const decoder = new TextDecoder();
-      serverElem.setAttribute('log', decoder.decode(value));
-    });
-    connections--;
-    serverElem.setAttribute('connections', connections.toString());
-    socket.close();
-    console.log('Closed a connection');
-  },
-);
+  collectConnections(
+    server,
+    (a, p) => {
+      address = a;
+      port = p;
+      console.log(`Server listening on ${address}:${port}`);
+      if (addSocketButton) {
+        addSocketButton.disabled = false;
+      }
+      setup();
+    },
+    async (socket: TCPSocket) => {
+      connections++;
+      serverElem.setAttribute('connections', connections.toString());
 
-async function setup() {
+      serverElem.addEventListener('send', (e: CustomEvent) => {
+        const data = e.detail.message;
+        console.log(data);
+        writeStream(socket, data);
+      });
+
+      const connection = await socket.opened;
+      const reader = connection.readable.getReader();
+      await readStream(reader, (value: Uint8Array) => {
+        console.log(value.byteLength);
+        bytes += value.byteLength;
+        serverElem.setAttribute('bytes', bytes.toString());
+        const decoder = new TextDecoder();
+        serverElem.setAttribute('log', decoder.decode(value));
+      });
+      connections--;
+      serverElem.setAttribute('connections', connections.toString());
+      socket.close();
+      console.log('Closed a connection');
+    },
+  );
+}
+
+function setup() {
   const serverAnchor = document.getElementById('socketServer') as HTMLElement;
   serverElem.setAttribute('address', address);
   serverElem.setAttribute('port', port.toString());
-  serverElem.server = server;
+  if (server) {
+    serverElem.server = server;
+  }
   serverAnchor.appendChild(serverElem);
 }
 
@@ -79,6 +84,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   const socketsInfo = document.getElementById(
     'socketConnections',
   ) as HTMLElement;
+  const serverAnchor = document.getElementById('socketServer') as HTMLElement;
+
+  if (!iwaAvailable) {
+    addSocketButton.disabled = true;
+    const notice = document.createElement('p');
+    notice.textContent =
+      'Direct Sockets API is not available in this browser. This demo requires Chrome with Isolated Web Apps enabled.';
+    notice.style.color = '#666';
+    notice.style.fontStyle = 'italic';
+    socketsInfo.appendChild(notice);
+
+    const serverNotice = document.createElement('p');
+    serverNotice.textContent = 'Server not started — IWA runtime required.';
+    serverNotice.style.color = '#666';
+    serverNotice.style.fontStyle = 'italic';
+    serverAnchor.appendChild(serverNotice);
+    return;
+  }
 
   addSocketButton.addEventListener('click', async () => {
     const newSocketComponent = document.createElement('socket-connection');

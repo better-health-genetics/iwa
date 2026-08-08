@@ -14,8 +14,12 @@
  * limitations under the License.
  */
 
-document.getElementById('unframed').addEventListener('click', async (e) => {
+document.getElementById('unframed')?.addEventListener('click', async (e) => {
   e.preventDefault();
+  if (typeof window.getScreenDetails !== 'function') {
+    console.log('Window Management API not available in this browser.');
+    return;
+  }
   const screenDetails = await window.getScreenDetails();
   console.log(screenDetails);
 });
